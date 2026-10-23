@@ -1,0 +1,39 @@
+{
+  "name": "heart",
+  "disease": "heart disease",
+  "algorithm": "LogisticRegression",
+  "C": 0.3,
+  "features": [
+    "age",
+    "sex",
+    "cp",
+    "trestbps",
+    "chol",
+    "fbs",
+    "restecg",
+    "thalach",
+    "exang",
+    "oldpeak",
+    "slope",
+    "ca",
+    "thal"
+  ],
+  "threshold": 0.3,
+  "positive_class": "1 = has heart disease",
+  "label_note": "In heart.csv the original target is inverted: original target 0 = sick. We trained on y = 1 - target, so predict_proba gives the chance of being sick.",
+  "invalid_to_nan": {
+    "ca": [
+      4
+    ],
+    "thal": [
+      0
+    ]
+  },
+  "fill_values": {
+    "ca": 0.0,
+    "thal": 2.0
+  },
+  "sklearn_version": "1.6.1",
+  "model_name": "heart",
+  "model_type": "LogisticRegression C=0.3"
+}

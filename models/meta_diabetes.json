@@ -1,0 +1,49 @@
+{
+  "disease": "diabetes",
+  "features": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "threshold": 0.35,
+  "medians": {
+    "Glucose": 117.0,
+    "BloodPressure": 72.0,
+    "SkinThickness": 29.0,
+    "Insulin": 125.0,
+    "BMI": 32.3
+  },
+  "sklearn_version": "1.6.1",
+  "model_name": "diabetes",
+  "model_type": "LogisticRegression C=1",
+  "positive_class": "1 = has diabetes",
+  "invalid_to_nan": {
+    "Glucose": [
+      0
+    ],
+    "BloodPressure": [
+      0
+    ],
+    "SkinThickness": [
+      0
+    ],
+    "Insulin": [
+      0
+    ],
+    "BMI": [
+      0
+    ]
+  },
+  "fill_values": {
+    "Glucose": 117.0,
+    "BloodPressure": 72.0,
+    "SkinThickness": 29.0,
+    "Insulin": 125.0,
+    "BMI": 32.3
+  }
+}
