@@ -7,7 +7,8 @@ from app.schema import DiseaseInput, HeartInput, DiabetesInput
 from app.model import (load_artifacts, get_symptom_list,
                        predict_disease, predict_heart, predict_diabetes)
 
-from app.routers.search import router as search_router 
+from app.routers.search import router as search_router
+from app.routers.reports import router as reports_router  # NEW
 
 
 @asynccontextmanager
@@ -25,6 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(search_router)
+app.include_router(reports_router)  # NEW
 
 
 @app.get("/")
