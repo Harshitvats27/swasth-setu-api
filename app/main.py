@@ -7,6 +7,8 @@ from app.schema import DiseaseInput, HeartInput, DiabetesInput
 from app.model import (load_artifacts, get_symptom_list,
                        predict_disease, predict_heart, predict_diabetes)
 
+from app.routers.search import router as search_router 
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,6 +24,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(search_router)
 
 
 @app.get("/")
