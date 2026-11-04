@@ -20,6 +20,7 @@ class ChatRequest(BaseModel):
 class Source(BaseModel):
     title: str = ""
     page: int | None = None
+    url: str | None = None
 
 
 class ChatResponse(BaseModel):
