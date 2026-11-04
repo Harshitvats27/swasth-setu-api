@@ -9,6 +9,7 @@ from app.model import (load_artifacts, get_symptom_list,
 
 from app.routers.search import router as search_router
 from app.routers.reports import router as reports_router  # NEW
+from app.routers.chat import router as chat_router 
 
 
 @asynccontextmanager
@@ -27,6 +28,7 @@ app.add_middleware(
 )
 app.include_router(search_router)
 app.include_router(reports_router)  # NEW
+app.include_router(chat_router)
 
 
 @app.get("/")
