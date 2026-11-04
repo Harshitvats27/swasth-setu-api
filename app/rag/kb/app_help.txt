@@ -33,4 +33,4 @@ How to find nearby hospitals:
 
 How to sign in:
 - Sign in with your phone number (OTP) or Google. You can also use fingerprint (biometric) to unlock the app.
-- New users create a health profile (height, weight and health details). Returning users see their saved profile.
+- New users create a health profile (height, weight and health details). Returning users see their saved profile..
