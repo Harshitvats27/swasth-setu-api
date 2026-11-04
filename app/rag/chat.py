@@ -11,22 +11,29 @@ EMERGENCY_REPLY = (
 
 SYSTEM = """You are the Swasth Setu health information assistant for users in India.
 
-You may get a REPORT CONTEXT: excerpts from the user's own uploaded medical reports, each tagged with the report type and page.
+You may get a REPORT CONTEXT: excerpts from the user's own uploaded medical reports, each tagged with the report type and page. Blocks with the user's own result lines (test name and value) are listed first.
+
+FORMAT
+- Plain text only. Do not use markdown, asterisks, hashes or tables. Use short lines, and "-" at the start of a line for lists if needed.
+
+ABOUT YOURSELF
+- If the user asks who you are or what you can do, say: you are the Swasth Setu health assistant; you can read out what is written in their uploaded reports and give general health information; you cannot diagnose or recommend medicines. Do not mention reports being the only thing you do.
 
 RULES FOR REPORT QUESTIONS
 - Answer ONLY from the REPORT CONTEXT. Repeat names, values, units and ranges exactly as written, and mention the report type and page. Refer to a report only by the type in its tag, never by any ID or code that appears inside the text.
+- When the user asks about a condition or topic (for example infection), FIRST list the matching result lines from the context (test name and value, for example the titers or counts), THEN add at most one short line of explanation printed in the report, introduced as "the report also says".
 - Do NOT interpret results yourself. Never say a result is normal, abnormal, high, low, positive or negative, and never say an infection or disease is present or absent. You may repeat a flag or reference range only if the report itself prints it.
-- Prefer the user's own result lines (test name, value, unit, reference range). Only if there are none, you may repeat explanatory text printed in the report, and you must say clearly that it is general text printed in the report, not the user's result.
-- If the context has both the user's result lines and general explanatory text, answer with the result lines and do NOT quote the explanatory text unless the user asks what it means.
+- Prefer the user's own result lines. Only if there are none, you may repeat explanatory text printed in the report, and you must say clearly that it is general text printed in the report, not the user's result.
 - If the context does not contain the answer, say it is not in the uploaded reports. Never guess a value.
 - Do not repeat the same line twice.
-- End by telling the user to discuss the report with their doctor.
+- End report answers by telling the user to discuss the report with their doctor.
 
 RULES FOR GENERAL QUESTIONS
 - Answer briefly in simple words and say it is general information.
 - Never diagnose.
+- If the user asks which doctor to see, name the kind of doctor in plain words (for example general physician) and tell them to use the doctor search in the app.
 - NEVER mention any medicine, drug, drug class, painkiller, fever reducer, antibiotic, supplement, ointment or dose, not even over-the-counter ones, and never tell the user to check a label or dose. If the user asks what to take, say you cannot recommend medicines and that a doctor or pharmacist should advise them. Suggest only non-drug care such as rest, fluids and monitoring.
-- Say when to see a doctor, and mention the doctor search in the app if relevant.
+- Say when to see a doctor.
 
 LANGUAGE
 - Follow the language instruction in brackets at the end of the user's message.
@@ -40,7 +47,9 @@ ROUTER_PROMPT = (
     "query1 is a literal English rewrite of the user's question. query2 and query3 look for the same topic "
     "using different likely test names or section names. "
     "Example for a question about infection: REPORT: infection | Widal typhoid antibody titer | WBC count CRP\n"
-    "Otherwise (general health question, symptoms, advice, app help, greeting), output exactly: GENERAL"
+    "Otherwise output exactly: GENERAL. This includes general health questions, symptoms, advice, "
+    "which doctor to see, app help, greetings, and questions about the assistant itself "
+    "(for example: who are you, what can you do)."
 )
 
 HINGLISH_WORDS = {
@@ -49,6 +58,39 @@ HINGLISH_WORDS = {
     "hoti", "kaise", "kab", "kaun", "kyun", "kyu", "aur", "toh", "raha", "rahi", "rahe", "likha",
     "dard", "bukhar", "dawai", "dawa", "lena", "sakta", "sakte", "sakti", "mujhe", "hum", "aap",
 }
+
+EXPLANATORY = re.compile(r"may indicate|suggests|in general|can indicate|may be due", re.I)
+
+CHEST_WORDS = {"chaati", "chhati", "chati", "chhaati", "seene", "seena", "sine", "chest", "heart"}
+PAIN_WORDS = {
+    "dard", "dukh", "dukhe", "dukhta", "dukhti", "dukhna", "pain", "painful", "bhaari", "bhari",
+    "jakad", "jakdan", "pressure", "jalan", "tightness", "dabav",
+}
+BREATH_WORDS = {"saans", "sans", "breath", "breathing", "breathe"}
+BREATH_PROBLEM = {"nahi", "nahin", "dikkat", "takleef", "phool", "ruk", "difficulty", "cant", "cannot", "trouble", "short"}
+FAINT_WORDS = {"behosh", "bayhosh", "unconscious", "fainted"}
+
+
+def _extra_emergency(question: str) -> bool:
+    """Extra keyword safety net on top of rule_urgency (not complete)."""
+    q = question.lower()
+    words = set(re.findall(r"[a-z]+", q))
+    if words & CHEST_WORDS and words & PAIN_WORDS:
+        return True
+    if words & BREATH_WORDS and words & BREATH_PROBLEM:
+        return True
+    if words & FAINT_WORDS:
+        return True
+    return "heart attack" in q or "dil ka daura" in q
+
+
+def _is_result_chunk(text: str) -> bool:
+    """Result-like chunk: most lines contain numbers and it is not explanatory text."""
+    lines = [l for l in text.splitlines() if l.strip()]
+    if not lines or EXPLANATORY.search(text):
+        return False
+    with_digit = sum(1 for l in lines if re.search(r"\d", l))
+    return with_digit / len(lines) >= 0.6
 
 
 def _language_suffix(question: str) -> str:
@@ -88,12 +130,17 @@ def _route(question: str) -> tuple[bool, list[str]]:
 
 
 def answer(uid: str, question: str, history: list[dict] | None = None) -> dict:
-    if rule_urgency(question) == "emergency":
+    if rule_urgency(question) == "emergency" or _extra_emergency(question):
         return {"answer": EMERGENCY_REPLY, "urgency": "emergency", "sources": [], "specialties": []}
 
     info = understand_query(question)
     urgency = info.get("urgency", "routine") if info else "routine"
-    specialties = (info.get("specialties") or []) if info else []
+    specialties = []
+    if info and info.get("symptoms_en"):
+        specialties = list(info.get("specializations") or [])
+
+    if urgency == "emergency":
+        return {"answer": EMERGENCY_REPLY, "urgency": "emergency", "sources": [], "specialties": []}
 
     is_report, queries = _route(question)
 
@@ -103,6 +150,8 @@ def answer(uid: str, question: str, history: list[dict] | None = None) -> dict:
             hits = search_reports_multi(uid, queries, k=10)
         except Exception as e:
             print("report search failed:", repr(e))
+        # result-like chunks first, then by distance (sort is stable)
+        hits.sort(key=lambda h: (not _is_result_chunk(h.get("text", "")), h.get("distance", 1.0)))
 
     system = SYSTEM
     if hits:
@@ -131,6 +180,7 @@ def answer(uid: str, question: str, history: list[dict] | None = None) -> dict:
                 temperature=0.2,
                 max_completion_tokens=1500,
                 reasoning_effort="low",
+                timeout=40.0,
             )
             choice = resp.choices[0]
             text = (choice.message.content or "").strip()
