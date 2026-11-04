@@ -1,0 +1,36 @@
+Title: Swasth Setu app help
+Source: Swasth Setu app
+
+How to book an appointment:
+- Open the Doctors tab, then search for a doctor or choose a specialty.
+- Tap a doctor to see their details, then choose an available date and time slot.
+- Confirm the booking. You get a token number for the appointment.
+- You can see your upcoming appointments and token in the app after booking.
+
+How to find a doctor:
+- Use the search bar on the Doctors tab. You can type a doctor's name, a specialty, or your symptoms or illness in English, Hindi or Hinglish (for example "pet dard" or "chest pain").
+- The app understands the symptom and suggests the right type of doctor (specialization). If the symptoms look serious, an emergency banner is shown.
+- You can also open the map to see doctors and hospitals near you.
+
+How the SOS feature works:
+- Shake your phone to trigger SOS in an emergency. You can also use the SOS button in the app.
+- SOS alerts the emergency contacts you saved. You choose these contacts from your phone book.
+- The SOS screen also has helpline and police call buttons to call directly.
+- Add your emergency contacts before you need them.
+
+How the queue / token works:
+- When you book an appointment at a hospital or clinic, you get a token number.
+- The live queue shows which token is being served now and how many people are ahead of you, so you can estimate your waiting time without sitting in the waiting room.
+- Check the queue screen shortly before your visit to see how close your turn is.
+
+How to upload and view health records:
+- Open Profile, then My Reports. Upload a text-based PDF report (PDF downloaded from the lab, not a photo or scan). Wait until the status shows ready, then ask the assistant about your report in the chat.
+- Photos and scanned reports are not supported yet.
+
+How to find nearby hospitals:
+- Open the Hospitals section or the map to see hospitals near you.
+- Tap a hospital to see its details and book an appointment or get a token.
+
+How to sign in:
+- Sign in with your phone number (OTP) or Google. You can also use fingerprint (biometric) to unlock the app.
+- New users create a health profile (height, weight and health details). Returning users see their saved profile.
