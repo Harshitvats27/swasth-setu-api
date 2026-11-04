@@ -1,7 +1,7 @@
 import re
 
 
-def chunk_text(text: str, size: int = 600, overlap_lines: int = 2) -> list[str]:
+def chunk_text(text: str, size: int = 350, overlap_lines: int = 1) -> list[str]:
     lines = [re.sub(r"[ \t]+", " ", l).strip() for l in text.splitlines()]
     lines = [l for l in lines if l]
 

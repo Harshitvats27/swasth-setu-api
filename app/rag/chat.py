@@ -1,6 +1,6 @@
 import re
 
-from app.rag.report_search import search_reports
+from app.rag.report_search import search_reports_multi
 from app.search.rules import rule_urgency
 from app.search.understand import MODEL, _get_client, understand_query
 
@@ -19,6 +19,7 @@ RULES FOR REPORT QUESTIONS
 - Prefer the user's own result lines (test name, value, unit, reference range). Only if there are none, you may repeat explanatory text printed in the report, and you must say clearly that it is general text printed in the report, not the user's result.
 - If the context has both the user's result lines and general explanatory text, answer with the result lines and do NOT quote the explanatory text unless the user asks what it means.
 - If the context does not contain the answer, say it is not in the uploaded reports. Never guess a value.
+- Do not repeat the same line twice.
 - End by telling the user to discuss the report with their doctor.
 
 RULES FOR GENERAL QUESTIONS
@@ -34,8 +35,11 @@ LANGUAGE
 ROUTER_PROMPT = (
     "You route messages for a health app. Decide if the user is asking about THEIR OWN uploaded "
     "medical reports, lab results, test values, or what is written in their report.\n"
-    "If yes, output exactly: REPORT: <short English search query, max 15 words, including likely lab test "
-    "names or synonyms, for example for infection: Widal, typhoid, antibody titer, WBC, CRP>\n"
+    "If yes, output exactly one line: REPORT: query1 | query2 | query3\n"
+    "Each query is a short English search query (max 10 words) for a lab report. "
+    "query1 is a literal English rewrite of the user's question. query2 and query3 look for the same topic "
+    "using different likely test names or section names. "
+    "Example for a question about infection: REPORT: infection | Widal typhoid antibody titer | WBC count CRP\n"
     "Otherwise (general health question, symptoms, advice, app help, greeting), output exactly: GENERAL"
 )
 
@@ -58,8 +62,8 @@ def _language_suffix(question: str) -> str:
     return "\n\n[Reply in English.]"
 
 
-def _route(question: str) -> tuple[bool, str]:
-    """Returns (is_report_question, english_search_query)."""
+def _route(question: str) -> tuple[bool, list[str]]:
+    """Returns (is_report_question, list_of_english_search_queries)."""
     try:
         r = _get_client().chat.completions.create(
             model=MODEL,
@@ -73,13 +77,14 @@ def _route(question: str) -> tuple[bool, str]:
         )
         text = (r.choices[0].message.content or "").strip()
         if text.upper().startswith("REPORT:"):
-            return True, text[7:].strip() or question
+            queries = [q.strip() for q in text[7:].split("|") if q.strip()][:3]
+            return True, queries or [question]
         if text.upper().startswith("GENERAL"):
-            return False, ""
-        return True, question
+            return False, []
+        return True, [question]
     except Exception as e:
         print("route failed:", repr(e))
-        return True, question
+        return True, [question]
 
 
 def answer(uid: str, question: str, history: list[dict] | None = None) -> dict:
@@ -90,19 +95,19 @@ def answer(uid: str, question: str, history: list[dict] | None = None) -> dict:
     urgency = info.get("urgency", "routine") if info else "routine"
     specialties = (info.get("specialties") or []) if info else []
 
-    is_report, query_en = _route(question)
+    is_report, queries = _route(question)
 
     hits = []
     if is_report:
         try:
-            hits = search_reports(uid, query_en, k=6)
+            hits = search_reports_multi(uid, queries, k=10)
         except Exception as e:
             print("report search failed:", repr(e))
 
     system = SYSTEM
     if hits:
         ctx = "\n\n".join(
-            f"[{i + 1}] Report type: {h['type'] or h['title']}, page {h['page']}\n{h['text']}"
+            f"[{i + 1}] Report type: {h.get('type') or h.get('title', '')}, page {h.get('page')}\n{h.get('text', '')}"
             for i, h in enumerate(hits)
         )
         system += "\n\nREPORT CONTEXT:\n" + ctx
@@ -133,10 +138,10 @@ def answer(uid: str, question: str, history: list[dict] | None = None) -> dict:
 
     seen, sources = set(), []
     for h in hits:
-        label = h["type"] or h["title"]
-        key = (label, h["page"])
+        label = h.get("type") or h.get("title", "")
+        key = (label, h.get("page"))
         if key not in seen:
             seen.add(key)
-            sources.append({"title": label, "page": h["page"]})
+            sources.append({"title": label, "page": h.get("page")})
 
     return {"answer": text, "urgency": urgency, "sources": sources, "specialties": specialties}

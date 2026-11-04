@@ -5,7 +5,7 @@ from google.cloud.firestore_v1.vector import Vector
 from app.core.firebase import db
 from app.rag.embedder import embed
 
-MAX_DISTANCE = 0.65   # test karke tune karo (chhota = zyada strict)
+MAX_DISTANCE = 0.75   # test karke tune karo (chhota = zyada strict)
 
 
 def search_reports(uid: str, query_en: str, k: int = 4, max_distance: float = MAX_DISTANCE) -> list[dict]:
@@ -31,6 +31,7 @@ def search_reports(uid: str, query_en: str, k: int = 4, max_distance: float = MA
         rows.append({
             "text": x.get("text", ""),
             "title": x.get("title", ""),
+            "type": x.get("type", ""),
             "page": x.get("page"),
             "reportId": x.get("reportId", ""),
             "distance": dist,
@@ -47,3 +48,15 @@ def search_reports(uid: str, query_en: str, k: int = 4, max_distance: float = MA
         if len(out) >= k:
             break
     return out
+
+
+def search_reports_multi(uid: str, queries: list[str], k: int = 6, max_distance: float = MAX_DISTANCE) -> list[dict]:
+    best: dict[str, dict] = {}
+    for q in queries:
+        if not q.strip():
+            continue
+        for r in search_reports(uid, q, k=k, max_distance=max_distance):
+            key = " ".join(r["text"].split())
+            if key not in best or r["distance"] < best[key]["distance"]:
+                best[key] = r
+    return sorted(best.values(), key=lambda r: r["distance"])[:k]
