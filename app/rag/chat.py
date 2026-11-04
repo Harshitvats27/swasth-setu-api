@@ -122,19 +122,28 @@ def answer(uid: str, question: str, history: list[dict] | None = None) -> dict:
             messages.append({"role": m["role"], "content": m["content"][:500]})
     messages.append({"role": "user", "content": question[:500] + _language_suffix(question)})
 
+    text = ""
     try:
-        resp = _get_client().chat.completions.create(
-            model=MODEL,
-            messages=messages,
-            temperature=0.2,
-            max_completion_tokens=700,
-            reasoning_effort="low",
-        )
-        text = resp.choices[0].message.content or ""
+        for attempt in range(2):
+            resp = _get_client().chat.completions.create(
+                model=MODEL,
+                messages=messages,
+                temperature=0.2,
+                max_completion_tokens=1500,
+                reasoning_effort="low",
+            )
+            choice = resp.choices[0]
+            text = (choice.message.content or "").strip()
+            if text:
+                break
+            print("empty answer, finish_reason:", choice.finish_reason)
     except Exception as e:
         print("chat failed:", repr(e))
         return {"answer": "Sorry, the assistant is busy. Please try again in a minute.",
                 "urgency": urgency, "sources": [], "specialties": specialties}
+
+    if not text:
+        text = "Sorry, I could not prepare an answer this time. Please try again."
 
     seen, sources = set(), []
     for h in hits:
