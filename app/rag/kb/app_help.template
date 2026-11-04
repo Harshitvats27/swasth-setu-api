@@ -1,0 +1,20 @@
+Title: Swasth Setu app help
+Source: Swasth Setu app
+
+TODO: fill this in with how YOUR app really works, then rename this file to app_help.txt
+
+How to book an appointment:
+- <write the real steps, for example: open Doctors tab, search or choose a specialty, pick a doctor, choose a slot, confirm>
+
+How the SOS feature works:
+- <write what the SOS button does in your app>
+
+How the queue / token works:
+- <write how the queue or token system works in your app>
+
+How to upload and view health records:
+- Open Profile, then My Reports. Upload a text-based PDF report (PDF downloaded from the lab, not a photo or scan). Wait until the status shows ready, then ask the assistant about your report in the chat.
+- Photos and scanned reports are not supported yet.
+
+How to find a doctor:
+- <write the real steps>
